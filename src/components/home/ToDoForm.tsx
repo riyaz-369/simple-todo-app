@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import {
@@ -15,8 +15,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { todoSchema } from "@/lib/todoSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import TodoList from "./TodoList";
+import { Todos } from "@prisma/client";
 
 const ToDoForm = () => {
+  const [todos, setTodos] = useState<Todos[]>([]);
+
   const form = useForm<z.infer<typeof todoSchema>>({
     resolver: zodResolver(todoSchema),
     defaultValues: {
@@ -24,9 +28,34 @@ const ToDoForm = () => {
     },
   });
 
-  const handleAddTodo = (value: z.infer<typeof todoSchema>) => {
-    console.log(value);
+  const getTodos = async () => {
+    const res = await fetch("/api/todos");
+    const data = await res.json();
+    setTodos(data);
   };
+
+  const handleAddTodo = async (value: z.infer<typeof todoSchema>) => {
+    console.log(value);
+    const res = await fetch("/api/todos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(value),
+    });
+
+    const newTodo = await res.json();
+
+    console.log(newTodo);
+
+    setTodos([...todos, newTodo]);
+  };
+
+  console.log(todos);
+
+  useEffect(() => {
+    getTodos();
+  }, []);
 
   return (
     <div>
@@ -51,6 +80,7 @@ const ToDoForm = () => {
           <Button type="submit">ADD</Button>
         </form>
       </Form>
+      <TodoList todos={todos} />
     </div>
   );
 };
